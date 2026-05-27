@@ -325,7 +325,6 @@ a{color:var(--acc);text-decoration:none}
   <div style="display:flex;align-items:center;gap:6px;margin-left:4px;flex-shrink:0">
     <div class="sync-dot offline" id="sync-dot" title="Trạng thái đồng bộ"></div>
     <button class="auth-btn" id="auth-btn" title="Đăng nhập để đồng bộ">☁️ Đăng nhập</button>
-    <button class="hbtn" id="btn-fb-cfg" title="Cài đặt Firebase">⚙️</button>
   </div>
 </header>
 
@@ -1302,12 +1301,6 @@ let fbApp=null,db=null,fbAuth=null,currentUser=null;
 let syncTimeout=null,snapshotUnsub=null;
 let isSyncing=false;
 
-// ── Load stored Firebase config ──
-function getFbConfig(){
-  try{return JSON.parse(localStorage.getItem('fb_config')||'null');}catch{return null;}
-}
-function saveFbConfig(cfg){localStorage.setItem('fb_config',JSON.stringify(cfg));}
-
 // ── Toast helper ──
 function showToast(msg,ms=2800){
   const t=document.getElementById('toast');
@@ -1412,20 +1405,25 @@ function updateAuthUI(){
   }
 }
 
+// ═══════════════ 🔥 FIREBASE CONFIG – ĐIỀN VÀO ĐÂY ═══════════════
+const FB_CONFIG = {
+  apiKey:            "AIzaSyB9NTfKBWpWm3Jpf1cYfv-wmWZXzvgXD9Y",
+  authDomain:        "quan-ly-thoi-gian-19620.firebaseapp.com",
+  projectId:         "quan-ly-thoi-gian-19620",
+  storageBucket:     "quan-ly-thoi-gian-19620.firebasestorage.app",
+  messagingSenderId: "313409879226",
+  appId:             "1:313409879226:web:19a452a3ef0e1d8a141683"
+};
+// ══════════════════════════════════════════════════════════════════
+
 // ── Sign in / Sign out ──
-async function signIn(){
-  if(!fbAuth){showToast('⚙️ Cấu hình Firebase trước nhé!');openFbCfgModal();return;}
+function signIn(){
+  if(!fbAuth)return;
   const provider=new firebase.auth.GoogleAuthProvider();
   provider.setCustomParameters({prompt:'select_account'});
-  try{
-    await fbAuth.signInWithPopup(provider);
-    showToast('✅ Đăng nhập thành công!');
-  }catch(e){
-    if(e.code!=='auth/popup-closed-by-user'){
-      showToast('❌ Lỗi đăng nhập: '+e.message);
-      console.error(e);
-    }
-  }
+  fbAuth.signInWithPopup(provider)
+    .then(()=>showToast('✅ Đăng nhập thành công!'))
+    .catch(e=>{if(e.code!=='auth/popup-closed-by-user')showToast('❌ '+e.message);});
 }
 
 async function signOut(){
@@ -1443,58 +1441,6 @@ async function signOut(){
 document.getElementById('auth-btn').addEventListener('click',()=>{
   if(currentUser)signOut();else signIn();
 });
-
-// ── Firebase Config Modal ──
-function openFbCfgModal(){
-  const cfg=getFbConfig()||{};
-  showModal(`
-    <div class="modal-title">🔥 Cài đặt Firebase <button class="modal-close" id="mclose">✕</button></div>
-    <div style="font-size:11px;color:var(--txt2);margin-bottom:12px;line-height:1.6;background:var(--surf);padding:10px;border-radius:var(--rs);border:1px solid var(--brd)">
-      📋 <b>Hướng dẫn nhanh:</b><br>
-      1. Vào <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a><br>
-      2. Tạo project → Add web app<br>
-      3. Copy <code>firebaseConfig</code> vào đây<br>
-      4. Bật <b>Authentication → Google</b><br>
-      5. Bật <b>Firestore Database</b> → thêm rules bên dưới<br>
-      <br>🔒 <b>Firestore Rules:</b><br>
-      <code style="font-size:10px;word-break:break-all">match /users/{uid}{allow read,write:if request.auth.uid==uid;}</code>
-    </div>
-    <div class="mfield"><label>API Key</label><input class="minput" id="fb-apiKey" value="${cfg.apiKey||''}" placeholder="AIzaSy..."></div>
-    <div class="mfield"><label>Auth Domain</label><input class="minput" id="fb-authDomain" value="${cfg.authDomain||''}" placeholder="your-app.firebaseapp.com"></div>
-    <div class="mfield"><label>Project ID</label><input class="minput" id="fb-projectId" value="${cfg.projectId||''}" placeholder="your-project-id"></div>
-    <div class="mrow">
-      <div class="mfield" style="flex:1"><label>Storage Bucket</label><input class="minput" id="fb-storageBucket" value="${cfg.storageBucket||''}" placeholder="your-app.appspot.com"></div>
-      <div class="mfield" style="flex:1"><label>App ID</label><input class="minput" id="fb-appId" value="${cfg.appId||''}" placeholder="1:..."></div>
-    </div>
-    <div class="mfield"><label>Messaging Sender ID</label><input class="minput" id="fb-messagingSenderId" value="${cfg.messagingSenderId||''}" placeholder="123456789"></div>
-    <div class="mfooter">
-      ${cfg.apiKey?'<button class="btn btn-d" id="fb-clear">🗑 Xóa cấu hình</button>':''}
-      <button class="btn btn-g" id="mcancel">Hủy</button>
-      <button class="btn btn-p" id="fb-save">🔥 Kết nối</button>
-    </div>`);
-  document.getElementById('mclose').onclick=closeModal;
-  document.getElementById('mcancel').onclick=closeModal;
-  const clrBtn=document.getElementById('fb-clear');
-  if(clrBtn)clrBtn.onclick=()=>{localStorage.removeItem('fb_config');closeModal();fbApp=null;db=null;fbAuth=null;currentUser=null;updateAuthUI();setSyncStatus('offline');showToast('🗑 Đã xóa cấu hình Firebase');};
-  document.getElementById('fb-save').onclick=async()=>{
-    const cfg={
-      apiKey:document.getElementById('fb-apiKey').value.trim(),
-      authDomain:document.getElementById('fb-authDomain').value.trim(),
-      projectId:document.getElementById('fb-projectId').value.trim(),
-      storageBucket:document.getElementById('fb-storageBucket').value.trim(),
-      messagingSenderId:document.getElementById('fb-messagingSenderId').value.trim(),
-      appId:document.getElementById('fb-appId').value.trim()
-    };
-    if(!cfg.apiKey||!cfg.projectId){showToast('⚠️ Nhập ít nhất API Key và Project ID');return;}
-    saveFbConfig(cfg);
-    closeModal();
-    const ok=initFirebase(cfg);
-    if(ok)showToast('🔥 Firebase đã kết nối! Nhấn "Đăng nhập".');
-    else showToast('❌ Lỗi khởi tạo Firebase. Kiểm tra lại config.');
-  };
-}
-
-document.getElementById('btn-fb-cfg').addEventListener('click',openFbCfgModal);
 
 // ── Init Firebase ──
 function initFirebase(cfg){
@@ -1570,23 +1516,9 @@ if('serviceWorker' in navigator){
 }
 
 // ─────────────────────────────────────────────────────────────
-// AUTO-INIT if config already saved
+// AUTO-INIT Firebase on load
 // ─────────────────────────────────────────────────────────────
-(()=>{
-  const saved=getFbConfig();
-  if(saved&&saved.apiKey&&saved.projectId){
-    initFirebase(saved);
-  }else{
-    setSyncStatus('offline');
-    // Show one-time hint if first visit
-    if(!localStorage.getItem('fb_hint_shown')){
-      setTimeout(()=>{
-        showToast('☁️ Nhấn ⚙️ để bật đồng bộ đám mây',4000);
-        localStorage.setItem('fb_hint_shown','1');
-      },2000);
-    }
-  }
-})();
+initFirebase(FB_CONFIG);
 </script>
 </body>
 </html>
