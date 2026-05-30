@@ -354,6 +354,7 @@ a{color:var(--acc);text-decoration:none}
     <div style="display:flex;flex-direction:column;gap:5px">
       <button class="hbtn" onclick="exportData()" style="width:100%;justify-content:center">⬆ Export JSON</button>
       <button class="hbtn" onclick="document.getElementById('import-file').click()" style="width:100%;justify-content:center">⬇ Import JSON</button>
+      <button class="hbtn" id="btn-reset-default" style="width:100%;justify-content:center;color:var(--warn);border-color:rgba(240,144,48,.35)">🔄 Reset lịch mặc định</button>
     </div>
   </aside>
 
@@ -1206,6 +1207,31 @@ function exportData(){
   a.click();URL.revokeObjectURL(a.href);
 }
 document.getElementById('btn-export').addEventListener('click',exportData);
+
+// ── RESET về lịch mặc định ──
+document.getElementById('btn-reset-default').addEventListener('click',()=>{
+  showModal(`<div class="modal-title">🔄 Reset lịch mặc định <button class="modal-close" id="mclose">✕</button></div>
+    <p style="color:var(--txt2);font-size:13px;margin-bottom:8px">Lịch T2–CN sẽ được đặt lại theo mẫu mặc định mới nhất.</p>
+    <p style="color:var(--txt3);font-size:12px;margin-bottom:16px">⚠️ Các thay đổi thủ công của bạn sẽ bị mất. Dữ liệu tick (hoàn thành) và ghi chú vẫn giữ nguyên.</p>
+    <div class="mfooter">
+      <button class="btn btn-g" id="mcancel">Hủy</button>
+      <button class="btn" id="mconfirm" style="background:var(--warn);color:#fff">🔄 Reset ngay</button>
+    </div>`);
+  document.getElementById('mclose').onclick=closeModal;
+  document.getElementById('mcancel').onclick=closeModal;
+  document.getElementById('mconfirm').onclick=async ()=>{
+    state.schedule=JSON.parse(JSON.stringify(DEFAULT_SCHED));
+    save();
+    closeModal();
+    renderAll();
+    showToast('✅ Đã reset về lịch mặc định mới nhất');
+    // Nếu đang đăng nhập, đẩy lên cloud ngay
+    if(currentUser&&db){
+      clearTimeout(syncTimeout);
+      await syncToCloud();
+    }
+  };
+});
 document.getElementById('btn-import-trigger').addEventListener('click',()=>document.getElementById('import-file').click());
 document.getElementById('import-file').addEventListener('change',e=>{
   const file=e.target.files[0];if(!file)return;
