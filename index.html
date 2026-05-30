@@ -19,6 +19,8 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
+<!-- SheetJS for Excel export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -319,8 +321,11 @@ a{color:var(--acc);text-decoration:none}
   <button class="hbtn hdr-hide" id="btn-ai">🤖 AI</button>
   <button class="hbtn" id="btn-focus">🎯 Focus</button>
   <button class="hbtn hdr-hide" id="btn-export">⬆ Export</button>
+  <button class="hbtn hdr-hide" id="btn-export-excel">📊 Excel</button>
+  <button class="hbtn hdr-hide" id="btn-import-excel-trigger">📥 Excel</button>
   <button class="hbtn hdr-hide" id="btn-import-trigger">⬇ Import</button>
   <input type="file" id="import-file" accept=".json" class="hidden">
+  <input type="file" id="import-excel-file" accept=".xlsx,.xls" class="hidden">
   <!-- Sync + Auth -->
   <div style="display:flex;align-items:center;gap:6px;margin-left:4px;flex-shrink:0">
     <div class="sync-dot offline" id="sync-dot" title="Trạng thái đồng bộ"></div>
@@ -353,6 +358,8 @@ a{color:var(--acc);text-decoration:none}
     <div class="divider"></div>
     <div style="display:flex;flex-direction:column;gap:5px">
       <button class="hbtn" onclick="exportData()" style="width:100%;justify-content:center">⬆ Export JSON</button>
+      <button class="hbtn" id="btn-export-excel-sb" style="width:100%;justify-content:center;color:var(--ok);border-color:rgba(52,194,122,.35)">📊 Xuất Excel</button>
+      <button class="hbtn" id="btn-import-excel-sb" style="width:100%;justify-content:center;color:var(--acc);border-color:rgba(91,128,255,.35)">📥 Nhập Excel</button>
       <button class="hbtn" onclick="document.getElementById('import-file').click()" style="width:100%;justify-content:center">⬇ Import JSON</button>
       <button class="hbtn" id="btn-reset-default" style="width:100%;justify-content:center;color:var(--warn);border-color:rgba(240,144,48,.35)">🔄 Reset lịch mặc định</button>
     </div>
@@ -1325,6 +1332,190 @@ setInterval(()=>{
 // Set today as default active day
 activeDay=todayKey();
 renderAll();
+
+
+// ═══════════════════════════════════════════
+// EXPORT EXCEL
+// ═══════════════════════════════════════════
+function exportExcel(){
+  if(typeof XLSX === 'undefined'){
+    showToast('❌ Thư viện Excel chưa tải xong, thử lại sau giây lát');
+    return;
+  }
+
+  const wb = XLSX.utils.book_new();
+  const catMap = {};
+  Object.entries(CATS).forEach(([k,v]) => catMap[k] = v.label);
+
+  // Sheet cho từng ngày
+  DAYS.forEach(d => {
+    const items = state.schedule[d.key] || [];
+    const rows = [
+      ['Giờ', 'Hoạt động', 'Danh mục', 'Mẹo / Ghi chú']
+    ];
+    items.forEach(it => {
+      rows.push([it.t, it.a, catMap[it.c] || it.c, it.tip || '']);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    // Column widths
+    ws['!cols'] = [
+      {wch: 8},   // Giờ
+      {wch: 45},  // Hoạt động
+      {wch: 14},  // Danh mục
+      {wch: 50},  // Mẹo
+    ];
+
+    // Style header row (bold + background) - SheetJS Community supports basic styles
+    const headerStyle = {
+      font: { bold: true, color: { rgb: 'FFFFFF' } },
+      fill: { fgColor: { rgb: '23263C' } },
+      alignment: { horizontal: 'center' }
+    };
+    ['A1','B1','C1','D1'].forEach(cell => {
+      if(ws[cell]) ws[cell].s = headerStyle;
+    });
+
+    XLSX.utils.book_append_sheet(wb, ws, d.full);
+  });
+
+  // Sheet tổng hợp tất cả ngày
+  const summaryRows = [
+    ['Ngày', 'Giờ', 'Hoạt động', 'Danh mục', 'Mẹo / Ghi chú']
+  ];
+  DAYS.forEach(d => {
+    const items = state.schedule[d.key] || [];
+    items.forEach(it => {
+      summaryRows.push([d.full, it.t, it.a, catMap[it.c] || it.c, it.tip || '']);
+    });
+    summaryRows.push(['', '', '', '', '']); // dòng trống phân cách
+  });
+
+  const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);
+  wsSummary['!cols'] = [
+    {wch: 12},  // Ngày
+    {wch: 8},   // Giờ
+    {wch: 45},  // Hoạt động
+    {wch: 14},  // Danh mục
+    {wch: 50},  // Mẹo
+  ];
+
+  // Freeze header row
+  wsSummary['!freeze'] = { xSplit: 0, ySplit: 1 };
+
+  XLSX.utils.book_append_sheet(wb, wsSummary, 'Tổng hợp');
+
+  const filename = `lich-tuan_${todayDate()}.xlsx`;
+  XLSX.writeFile(wb, filename);
+  showToast('✅ Đã xuất ' + filename);
+}
+
+document.getElementById('btn-export-excel').addEventListener('click', exportExcel);
+document.getElementById('btn-export-excel-sb').addEventListener('click', exportExcel);
+
+
+// ═══════════════════════════════════════════
+// IMPORT EXCEL
+// ═══════════════════════════════════════════
+const SHEET_TO_KEY = {
+  'Thứ Hai':'mon','Thứ Ba':'tue','Thứ Tư':'wed',
+  'Thứ Năm':'thu','Thứ Sáu':'fri','Thứ Bảy':'sat','Chủ Nhật':'sun'
+};
+const CAT_LABEL_TO_KEY = {};
+Object.entries(CATS).forEach(([k,v]) => CAT_LABEL_TO_KEY[v.label] = k);
+
+function importExcel(){
+  document.getElementById('import-excel-file').click();
+}
+
+document.getElementById('btn-import-excel-trigger').addEventListener('click', importExcel);
+document.getElementById('btn-import-excel-sb').addEventListener('click', importExcel);
+
+document.getElementById('import-excel-file').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try{
+      if(typeof XLSX === 'undefined') throw new Error('Thư viện Excel chưa tải');
+
+      const data = new Uint8Array(ev.target.result);
+      const wb = XLSX.read(data, {type:'array'});
+
+      let updatedDays = [];
+      let errorDays = [];
+
+      wb.SheetNames.forEach(sheetName => {
+        const dayKey = SHEET_TO_KEY[sheetName];
+        if(!dayKey) return; // bỏ qua sheet Tổng hợp hoặc sheet lạ
+
+        const ws = wb.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+
+        if(rows.length < 2){ errorDays.push(sheetName); return; }
+
+        // Tìm index cột dựa trên header row
+        const headers = rows[0].map(h => String(h).trim().toLowerCase());
+        const colGio    = headers.findIndex(h => h.includes('giờ') || h.includes('gio'));
+        const colAct    = headers.findIndex(h => h.includes('hoạt động') || h.includes('hoat dong'));
+        const colCat    = headers.findIndex(h => h.includes('danh mục') || h.includes('danh muc'));
+        const colTip    = headers.findIndex(h => h.includes('mẹo') || h.includes('meo') || h.includes('ghi chú'));
+
+        if(colGio < 0 || colAct < 0){
+          errorDays.push(sheetName + ' (thiếu cột)');
+          return;
+        }
+
+        const items = [];
+        let idSeqLocal = 1;
+        rows.slice(1).forEach(row => {
+          const t = String(row[colGio] || '').trim();
+          const a = String(row[colAct] || '').trim();
+          if(!t || !a) return; // bỏ dòng trống
+
+          // Validate giờ format HH:MM
+          const timeOk = /^\d{1,2}:\d{2}$/.test(t);
+          if(!timeOk) return;
+
+          const catLabel = String(row[colCat] || '').trim();
+          const c = CAT_LABEL_TO_KEY[catLabel] || 'wellness';
+          const tip = colTip >= 0 ? String(row[colTip] || '').trim() : '';
+
+          items.push({
+            id: dayKey + '_xl_' + (idSeqLocal++),
+            t, a, c, tip
+          });
+        });
+
+        if(items.length === 0){ errorDays.push(sheetName + ' (không có dữ liệu hợp lệ)'); return; }
+
+        // Sắp xếp theo giờ
+        items.sort((a,b) => timeToMin(a.t) - timeToMin(b.t));
+        state.schedule[dayKey] = items;
+        updatedDays.push(sheetName);
+      });
+
+      if(updatedDays.length === 0){
+        showToast('❌ Không tìm thấy sheet hợp lệ nào');
+        return;
+      }
+
+      save();
+      renderAll();
+
+      let msg = '✅ Đã nhập: ' + updatedDays.join(', ');
+      if(errorDays.length) msg += ' | ⚠️ Lỗi: ' + errorDays.join(', ');
+      showToast(msg, 4500);
+
+    }catch(err){
+      showToast('❌ Lỗi đọc Excel: ' + err.message);
+    }
+    e.target.value = '';
+  };
+  reader.readAsArrayBuffer(file);
+});
 
 // ─────────────────────────────────────────────────────────────
 // FIREBASE + CLOUD SYNC
