@@ -1354,7 +1354,7 @@ function exportExcel(){
       ['Giờ', 'Hoạt động', 'Danh mục', 'Mẹo / Ghi chú']
     ];
     items.forEach(it => {
-      rows.push([it.t, it.a, catMap[it.c] || it.c, it.tip || '']);
+      rows.push([{t:'s',v:it.t}, it.a, catMap[it.c] || it.c, it.tip || '']);
     });
 
     const ws = XLSX.utils.aoa_to_sheet(rows);
@@ -1387,7 +1387,7 @@ function exportExcel(){
   DAYS.forEach(d => {
     const items = state.schedule[d.key] || [];
     items.forEach(it => {
-      summaryRows.push([d.full, it.t, it.a, catMap[it.c] || it.c, it.tip || '']);
+      summaryRows.push([d.full, {t:'s',v:it.t}, it.a, catMap[it.c] || it.c, it.tip || '']);
     });
     summaryRows.push(['', '', '', '', '']); // dòng trống phân cách
   });
@@ -1424,6 +1424,27 @@ const SHEET_TO_KEY = {
 };
 const CAT_LABEL_TO_KEY = {};
 Object.entries(CATS).forEach(([k,v]) => CAT_LABEL_TO_KEY[v.label] = k);
+
+// Chuyển Excel time serial (0.229...) hoặc chuỗi "05:30" về "HH:MM"
+function excelTimeToHHMM(val){
+  if(val === '' || val === null || val === undefined) return '';
+  // Nếu đã là chuỗi HH:MM
+  if(typeof val === 'string'){
+    const s = val.trim();
+    if(/^\d{1,2}:\d{2}$/.test(s)) return s.padStart(5,'0').slice(0,5);
+    // Đôi khi Excel xuất "5:30 SA" hoặc "5:30:00"
+    const m = s.match(/^(\d{1,2}):(\d{2})/);
+    if(m) return String(m[1]).padStart(2,'0') + ':' + m[2];
+  }
+  // Nếu là số thập phân (Excel time serial)
+  if(typeof val === 'number'){
+    const totalMin = Math.round(val * 24 * 60);
+    const h = Math.floor(totalMin / 60) % 24;
+    const m = totalMin % 60;
+    return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+  }
+  return String(val).trim();
+}
 
 function importExcel(){
   document.getElementById('import-excel-file').click();
@@ -1471,13 +1492,12 @@ document.getElementById('import-excel-file').addEventListener('change', e => {
         const items = [];
         let idSeqLocal = 1;
         rows.slice(1).forEach(row => {
-          const t = String(row[colGio] || '').trim();
+          const t = excelTimeToHHMM(row[colGio]);
           const a = String(row[colAct] || '').trim();
           if(!t || !a) return; // bỏ dòng trống
 
-          // Validate giờ format HH:MM
-          const timeOk = /^\d{1,2}:\d{2}$/.test(t);
-          if(!timeOk) return;
+          // Bỏ qua dòng không parse được giờ
+          if(!t) return;
 
           const catLabel = String(row[colCat] || '').trim();
           const c = CAT_LABEL_TO_KEY[catLabel] || 'wellness';
