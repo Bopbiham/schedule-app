@@ -1242,6 +1242,7 @@ document.getElementById('btn-reset-default').addEventListener('click',()=>{
 document.getElementById('btn-import-trigger').addEventListener('click',()=>document.getElementById('import-file').click());
 document.getElementById('import-file').addEventListener('change',e=>{
   const file=e.target.files[0];if(!file)return;
+  if(!currentUser){showToast('🔒 Vui lòng đăng nhập trước khi import');e.target.value='';return;}
   const r=new FileReader();
   r.onload=ev=>{
     try{
@@ -1456,6 +1457,7 @@ document.getElementById('btn-import-excel-sb').addEventListener('click', importE
 document.getElementById('import-excel-file').addEventListener('change', e => {
   const file = e.target.files[0];
   if(!file) return;
+  if(!currentUser){showToast('🔒 Vui lòng đăng nhập trước khi import');e.target.value='';return;}
 
   const reader = new FileReader();
   reader.onload = ev => {
