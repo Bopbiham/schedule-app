@@ -19,8 +19,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-<!-- SheetJS for Excel export -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -321,11 +319,8 @@ a{color:var(--acc);text-decoration:none}
   <button class="hbtn hdr-hide" id="btn-ai">🤖 AI</button>
   <button class="hbtn" id="btn-focus">🎯 Focus</button>
   <button class="hbtn hdr-hide" id="btn-export">⬆ Export</button>
-  <button class="hbtn hdr-hide" id="btn-export-excel">📊 Excel</button>
-  <button class="hbtn hdr-hide" id="btn-import-excel-trigger">📥 Excel</button>
   <button class="hbtn hdr-hide" id="btn-import-trigger">⬇ Import</button>
   <input type="file" id="import-file" accept=".json" class="hidden">
-  <input type="file" id="import-excel-file" accept=".xlsx,.xls" class="hidden">
   <!-- Sync + Auth -->
   <div style="display:flex;align-items:center;gap:6px;margin-left:4px;flex-shrink:0">
     <div class="sync-dot offline" id="sync-dot" title="Trạng thái đồng bộ"></div>
@@ -358,10 +353,7 @@ a{color:var(--acc);text-decoration:none}
     <div class="divider"></div>
     <div style="display:flex;flex-direction:column;gap:5px">
       <button class="hbtn" onclick="exportData()" style="width:100%;justify-content:center">⬆ Export JSON</button>
-      <button class="hbtn" id="btn-export-excel-sb" style="width:100%;justify-content:center;color:var(--ok);border-color:rgba(52,194,122,.35)">📊 Xuất Excel</button>
-      <button class="hbtn" id="btn-import-excel-sb" style="width:100%;justify-content:center;color:var(--acc);border-color:rgba(91,128,255,.35)">📥 Nhập Excel</button>
       <button class="hbtn" onclick="document.getElementById('import-file').click()" style="width:100%;justify-content:center">⬇ Import JSON</button>
-      <button class="hbtn" id="btn-reset-default" style="width:100%;justify-content:center;color:var(--warn);border-color:rgba(240,144,48,.35)">🔄 Reset lịch mặc định</button>
     </div>
   </aside>
 
@@ -440,104 +432,103 @@ const KEY_HABITS=[
 
 const DEFAULT_SCHED={
   mon:[
-    {id:"m01",t:"05:00",a:"Thức dậy · vệ sinh cá nhân",c:"wellness",tip:""},
-    {id:"m02",t:"05:15",a:"Yoga 🧘 hoặc Chạy bộ 🏃 (45')",c:"exercise",tip:"Thiền 5 phút cuối · hít thở sâu 4-7-8"},
-    {id:"m03",t:"06:00",a:"Chăm sóc vườn cây + Nghe tiếng Anh",c:"garden",tip:"Tưới cây + quan sát · thư giãn tâm trí"},
-    {id:"m04",t:"06:30",a:"Ăn sáng",c:"wellness",tip:""},
-    {id:"m05",t:"07:05",a:"Đi làm + Podcast / Học tiếng Anh",c:"learning",tip:"Chuẩn bị playlist tối hôm trước"},
-    {id:"m06",t:"07:30",a:"Làm việc tại cơ quan",c:"work",tip:"Deep work 08:00–10:30 · không check email trước"},
-    {id:"m07",t:"11:30",a:"Về nhà + Podcast / Học tiếng Anh",c:"learning",tip:"Chuyển não khỏi work mode"},
-    {id:"m08",t:"11:50",a:"Ăn trưa",c:"wellness",tip:""},
-    {id:"m09",t:"12:15",a:"Nghỉ trưa (60') + Đọc sách",c:"learning",tip:"Đặt báo thức đúng giờ · đọc sách sau khi tỉnh"},
-    {id:"m10",t:"13:15",a:"Đi làm + Podcast / Học tiếng Anh",c:"learning",tip:"Chuẩn bị tâm thế cho buổi chiều"},
-    {id:"m11",t:"13:30",a:"Làm việc tại cơ quan",c:"work",tip:"Giải quyết tasks cần focus"},
-    {id:"m12",t:"17:30",a:"Về nhà + Nghe podcast",c:"learning",tip:"Chuyển não khỏi work mode"},
-    {id:"m13",t:"17:50",a:"Đi dạo với con · Chơi với con · Làm việc nhà",c:"family",tip:"Không điện thoại · 100% hiện diện"},
-    {id:"m14",t:"18:30",a:"Ăn tối gia đình",c:"family",tip:"Không điện thoại"},
-    {id:"m15",t:"19:30",a:"Vibecoding 💻",c:"work",tip:"Build mini-tool · giải quyết 1 vấn đề cụ thể"},
+    {id:"m01",t:"05:30",a:"Thức dậy · vệ sinh cá nhân",c:"wellness",tip:""},
+    {id:"m02",t:"06:00",a:"Yoga 🧘 (45')",c:"exercise",tip:"Thiền 5 phút cuối · hít thở sâu 4-7-8"},
+    {id:"m03",t:"06:45",a:"Chăm sóc vườn cây",c:"garden",tip:"Tưới cây + quan sát · thư giãn tâm trí"},
+    {id:"m04",t:"07:05",a:"Ăn sáng + Đọc sách",c:"learning",tip:"15–20 trang/ngày = 5–7 cuốn/năm"},
+    {id:"m05",t:"07:35",a:"Đi làm + Podcast / Học tiếng Anh",c:"learning",tip:"Chuẩn bị playlist tối hôm trước"},
+    {id:"m06",t:"08:00",a:"Làm việc tại cơ quan",c:"work",tip:"Deep work 08:00–10:30 · không check email trước"},
+    {id:"m07",t:"12:00",a:"Ăn trưa",c:"wellness",tip:""},
+    {id:"m08",t:"12:30",a:"Power nap 20' + Đọc sách / Viết ngắn",c:"creative",tip:"Power nap đúng 20' → tăng hiệu suất chiều 34%"},
+    {id:"m09",t:"13:00",a:"Làm việc tại cơ quan",c:"work",tip:"Giải quyết tasks cần focus"},
+    {id:"m10",t:"17:30",a:"Về nhà + Nghe podcast",c:"learning",tip:"Chuyển não khỏi work mode"},
+    {id:"m11",t:"18:00",a:"Đi dạo với con + Chơi với con",c:"family",tip:"Không điện thoại · 100% hiện diện"},
+    {id:"m12",t:"18:30",a:"Làm việc nhà · Nấu ăn",c:"house",tip:"Nghe podcast khi làm bếp (lồng ghép)"},
+    {id:"m13",t:"19:00",a:"Ăn tối gia đình",c:"family",tip:"Không điện thoại"},
+    {id:"m14",t:"19:30",a:"Tập Guitar 🎸 (30')",c:"creative",tip:"1 bài luyện + 1 kỹ thuật mới mỗi tuần"},
+    {id:"m15",t:"20:00",a:"Vibecoding 💻",c:"work",tip:"Build mini-tool · giải quyết 1 vấn đề cụ thể"},
     {id:"m16",t:"20:30",a:"Viết journal/blog + Học tiếng Anh",c:"creative",tip:"Ghi ý tưởng ngắn · Duolingo hoặc shadowing"},
-    {id:"m17",t:"21:30",a:"Thư giãn · Chuẩn bị ngủ",c:"wellness",tip:"Đọc nhẹ · không màn hình 30' trước ngủ"},
-    {id:"m18",t:"22:00",a:"Ngủ 💤 (7 tiếng)",c:"sleep",tip:""}
+    {id:"m17",t:"21:00",a:"Thư giãn · Chuẩn bị ngủ",c:"wellness",tip:"Đọc nhẹ · không màn hình 30' trước ngủ"},
+    {id:"m18",t:"21:30",a:"Ngủ 💤 (8 tiếng)",c:"sleep",tip:""}
   ],
   tue:[
-    {id:"t01",t:"05:00",a:"Thức dậy · vệ sinh cá nhân",c:"wellness",tip:""},
-    {id:"t02",t:"05:15",a:"Yoga 🧘 hoặc Chạy bộ 🏃 (45')",c:"exercise",tip:"Thiền 5 phút cuối · hít thở sâu 4-7-8"},
-    {id:"t03",t:"06:00",a:"Chăm sóc vườn cây + Nghe tiếng Anh",c:"garden",tip:"Tưới cây + quan sát · thư giãn tâm trí"},
-    {id:"t04",t:"06:30",a:"Ăn sáng",c:"wellness",tip:""},
-    {id:"t05",t:"07:05",a:"Đi làm + Podcast / Học tiếng Anh",c:"learning",tip:"Chuẩn bị playlist tối hôm trước"},
-    {id:"t06",t:"07:30",a:"Làm việc tại cơ quan",c:"work",tip:"Deep work 08:00–10:30 · không check email trước"},
-    {id:"t07",t:"11:30",a:"Về nhà + Podcast / Học tiếng Anh",c:"learning",tip:"Chuyển não khỏi work mode"},
-    {id:"t08",t:"11:50",a:"Ăn trưa",c:"wellness",tip:""},
-    {id:"t09",t:"12:15",a:"Nghỉ trưa (60') + Đọc sách",c:"learning",tip:"Đặt báo thức đúng giờ · đọc sách sau khi tỉnh"},
-    {id:"t10",t:"13:15",a:"Đi làm + Podcast / Học tiếng Anh",c:"learning",tip:"Chuẩn bị tâm thế cho buổi chiều"},
-    {id:"t11",t:"13:30",a:"Làm việc tại cơ quan",c:"work",tip:"Giải quyết tasks cần focus"},
-    {id:"t12",t:"17:30",a:"Về nhà + Nghe podcast",c:"learning",tip:"Chuyển não khỏi work mode"},
-    {id:"t13",t:"17:50",a:"Đi dạo với con · Chơi với con · Làm việc nhà",c:"family",tip:"Không điện thoại · 100% hiện diện"},
-    {id:"t14",t:"18:30",a:"Ăn tối gia đình",c:"family",tip:"Không điện thoại"},
-    {id:"t15",t:"19:30",a:"Vibecoding 💻",c:"work",tip:"Build mini-tool · giải quyết 1 vấn đề cụ thể"},
-    {id:"t16",t:"20:30",a:"Viết journal/blog + Học tiếng Anh",c:"creative",tip:"Ghi ý tưởng ngắn · Duolingo hoặc shadowing"},
-    {id:"t17",t:"21:30",a:"Thư giãn · Chuẩn bị ngủ",c:"wellness",tip:"Đọc nhẹ · không màn hình 30' trước ngủ"},
-    {id:"t18",t:"22:00",a:"Ngủ 💤 (7 tiếng)",c:"sleep",tip:""}
+    {id:"t01",t:"05:30",a:"Thức dậy · vệ sinh cá nhân",c:"wellness",tip:""},
+    {id:"t02",t:"06:00",a:"Chạy bộ 🏃 + Nghe podcast (45')",c:"exercise",tip:"5km hoặc 30 phút · nghe podcast khi chạy"},
+    {id:"t03",t:"06:45",a:"Chăm sóc vườn cây",c:"garden",tip:""},
+    {id:"t04",t:"07:05",a:"Ăn sáng + Đọc sách",c:"learning",tip:""},
+    {id:"t05",t:"07:35",a:"Đi làm + Học tiếng Anh",c:"learning",tip:""},
+    {id:"t06",t:"08:00",a:"Làm việc tại cơ quan",c:"work",tip:"Deep work buổi sáng"},
+    {id:"t07",t:"12:00",a:"Ăn trưa",c:"wellness",tip:""},
+    {id:"t08",t:"12:30",a:"Power nap 20' + Đọc sách",c:"learning",tip:"Đặt báo thức 20 phút chính xác"},
+    {id:"t09",t:"13:00",a:"Làm việc tại cơ quan",c:"work",tip:""},
+    {id:"t10",t:"17:30",a:"Về nhà + Nghe podcast",c:"learning",tip:""},
+    {id:"t11",t:"18:00",a:"Đi dạo với con + Chơi với con",c:"family",tip:""},
+    {id:"t12",t:"18:30",a:"Làm việc nhà",c:"house",tip:""},
+    {id:"t13",t:"19:00",a:"Ăn tối gia đình",c:"family",tip:""},
+    {id:"t14",t:"19:30",a:"Tập Piano 🎹 (30')",c:"creative",tip:"Luyện gam + tập bài từng tay riêng"},
+    {id:"t15",t:"20:00",a:"Vibecoding 💻",c:"work",tip:""},
+    {id:"t16",t:"20:30",a:"Viết + Học tiếng Anh",c:"creative",tip:""},
+    {id:"t17",t:"21:00",a:"Thư giãn · Chuẩn bị ngủ",c:"wellness",tip:""},
+    {id:"t18",t:"21:30",a:"Ngủ 💤 (8 tiếng)",c:"sleep",tip:""}
   ],
   wed:[
-    {id:"w01",t:"05:00",a:"Thức dậy · vệ sinh cá nhân",c:"wellness",tip:""},
-    {id:"w02",t:"05:15",a:"Yoga 🧘 hoặc Chạy bộ 🏃 (45')",c:"exercise",tip:"Thiền 5 phút cuối · hít thở sâu 4-7-8"},
-    {id:"w03",t:"06:00",a:"Chăm sóc vườn cây + Nghe tiếng Anh",c:"garden",tip:"Tưới cây + quan sát · thư giãn tâm trí"},
-    {id:"w04",t:"06:30",a:"Ăn sáng",c:"wellness",tip:""},
-    {id:"w05",t:"07:05",a:"Đi làm + Podcast / Học tiếng Anh",c:"learning",tip:"Chuẩn bị playlist tối hôm trước"},
-    {id:"w06",t:"07:30",a:"Làm việc tại cơ quan",c:"work",tip:"Deep work 08:00–10:30 · không check email trước"},
-    {id:"w07",t:"11:30",a:"Về nhà + Podcast / Học tiếng Anh",c:"learning",tip:"Chuyển não khỏi work mode"},
-    {id:"w08",t:"11:50",a:"Ăn trưa",c:"wellness",tip:""},
-    {id:"w09",t:"12:15",a:"Nghỉ trưa (60') + Đọc sách",c:"learning",tip:"Đặt báo thức đúng giờ · đọc sách sau khi tỉnh"},
-    {id:"w10",t:"13:15",a:"Đi làm + Podcast / Học tiếng Anh",c:"learning",tip:"Chuẩn bị tâm thế cho buổi chiều"},
-    {id:"w11",t:"13:30",a:"Làm việc tại cơ quan",c:"work",tip:"Giải quyết tasks cần focus"},
-    {id:"w12",t:"17:30",a:"Về nhà + Nghe podcast",c:"learning",tip:"Chuyển não khỏi work mode"},
-    {id:"w13",t:"17:50",a:"Đi dạo với con · Chơi với con · Làm việc nhà",c:"family",tip:"Không điện thoại · 100% hiện diện"},
-    {id:"w14",t:"18:30",a:"Ăn tối gia đình",c:"family",tip:"Không điện thoại"},
-    {id:"w15",t:"19:30",a:"Vibecoding 💻",c:"work",tip:"Build mini-tool · giải quyết 1 vấn đề cụ thể"},
-    {id:"w16",t:"20:30",a:"Viết journal/blog + Học tiếng Anh",c:"creative",tip:"Ghi ý tưởng ngắn · Duolingo hoặc shadowing"},
-    {id:"w17",t:"21:30",a:"Thư giãn · Chuẩn bị ngủ",c:"wellness",tip:"Đọc nhẹ · không màn hình 30' trước ngủ"},
-    {id:"w18",t:"22:00",a:"Ngủ 💤 (7 tiếng)",c:"sleep",tip:""}
+    {id:"w01",t:"05:30",a:"Thức dậy · vệ sinh cá nhân",c:"wellness",tip:""},
+    {id:"w02",t:"06:00",a:"Calisthenics 💪 (45')",c:"exercise",tip:"Push/pull/legs · bodyweight · không cần dụng cụ"},
+    {id:"w03",t:"06:45",a:"Chăm sóc vườn cây",c:"garden",tip:""},
+    {id:"w04",t:"07:05",a:"Ăn sáng + Đọc sách",c:"learning",tip:""},
+    {id:"w05",t:"07:35",a:"Đi làm + Podcast / Tiếng Anh",c:"learning",tip:""},
+    {id:"w06",t:"08:00",a:"Làm việc tại cơ quan",c:"work",tip:""},
+    {id:"w07",t:"12:00",a:"Ăn trưa",c:"wellness",tip:""},
+    {id:"w08",t:"12:30",a:"Đọc sách · Viết ngắn",c:"creative",tip:""},
+    {id:"w09",t:"13:00",a:"Làm việc tại cơ quan",c:"work",tip:""},
+    {id:"w10",t:"17:30",a:"Về nhà + Nghe podcast",c:"learning",tip:""},
+    {id:"w11",t:"18:00",a:"Đi dạo với con + Chơi với con",c:"family",tip:""},
+    {id:"w12",t:"18:30",a:"Làm việc nhà",c:"house",tip:""},
+    {id:"w13",t:"19:00",a:"Ăn tối gia đình",c:"family",tip:""},
+    {id:"w14",t:"19:30",a:"Tập Guitar 🎸 (30')",c:"creative",tip:""},
+    {id:"w15",t:"20:00",a:"Vibecoding 💻",c:"work",tip:""},
+    {id:"w16",t:"20:30",a:"Viết + Học tiếng Anh",c:"creative",tip:""},
+    {id:"w17",t:"21:00",a:"Thư giãn · Chuẩn bị ngủ",c:"wellness",tip:""},
+    {id:"w18",t:"21:30",a:"Ngủ 💤 (8 tiếng)",c:"sleep",tip:""}
   ],
   thu:[
-    {id:"h01",t:"05:00",a:"Thức dậy · vệ sinh cá nhân",c:"wellness",tip:""},
-    {id:"h02",t:"05:15",a:"Yoga 🧘 hoặc Chạy bộ 🏃 (45')",c:"exercise",tip:"Thiền 5 phút cuối · hít thở sâu 4-7-8"},
-    {id:"h03",t:"06:00",a:"Chăm sóc vườn cây + Nghe tiếng Anh",c:"garden",tip:"Tưới cây + quan sát · thư giãn tâm trí"},
-    {id:"h04",t:"06:30",a:"Ăn sáng",c:"wellness",tip:""},
-    {id:"h05",t:"07:05",a:"Đi làm + Podcast / Học tiếng Anh",c:"learning",tip:"Chuẩn bị playlist tối hôm trước"},
-    {id:"h06",t:"07:30",a:"Làm việc tại cơ quan",c:"work",tip:"Deep work 08:00–10:30 · không check email trước"},
-    {id:"h07",t:"11:30",a:"Về nhà + Podcast / Học tiếng Anh",c:"learning",tip:"Chuyển não khỏi work mode"},
-    {id:"h08",t:"11:50",a:"Ăn trưa",c:"wellness",tip:""},
-    {id:"h09",t:"12:15",a:"Nghỉ trưa (60') + Đọc sách",c:"learning",tip:"Đặt báo thức đúng giờ · đọc sách sau khi tỉnh"},
-    {id:"h10",t:"13:15",a:"Đi làm + Podcast / Học tiếng Anh",c:"learning",tip:"Chuẩn bị tâm thế cho buổi chiều"},
-    {id:"h11",t:"13:30",a:"Làm việc tại cơ quan",c:"work",tip:"Giải quyết tasks cần focus"},
-    {id:"h12",t:"17:30",a:"Về nhà + Nghe podcast",c:"learning",tip:"Chuyển não khỏi work mode"},
-    {id:"h13",t:"17:50",a:"Đi dạo với con · Chơi với con · Làm việc nhà",c:"family",tip:"Không điện thoại · 100% hiện diện"},
-    {id:"h14",t:"18:30",a:"Ăn tối gia đình",c:"family",tip:"Không điện thoại"},
-    {id:"h15",t:"19:30",a:"Vibecoding 💻",c:"work",tip:"Build mini-tool · giải quyết 1 vấn đề cụ thể"},
-    {id:"h16",t:"20:30",a:"Viết journal/blog + Học tiếng Anh",c:"creative",tip:"Ghi ý tưởng ngắn · Duolingo hoặc shadowing"},
-    {id:"h17",t:"21:30",a:"Thư giãn · Chuẩn bị ngủ",c:"wellness",tip:"Đọc nhẹ · không màn hình 30' trước ngủ"},
-    {id:"h18",t:"22:00",a:"Ngủ 💤 (7 tiếng)",c:"sleep",tip:""}
+    {id:"h01",t:"05:30",a:"Thức dậy · vệ sinh cá nhân",c:"wellness",tip:""},
+    {id:"h02",t:"06:00",a:"Yoga 🧘 (45')",c:"exercise",tip:""},
+    {id:"h03",t:"06:45",a:"Chăm sóc vườn cây",c:"garden",tip:""},
+    {id:"h04",t:"07:05",a:"Ăn sáng + Đọc sách",c:"learning",tip:""},
+    {id:"h05",t:"07:35",a:"Đi làm + Học tiếng Anh",c:"learning",tip:""},
+    {id:"h06",t:"08:00",a:"Làm việc tại cơ quan",c:"work",tip:""},
+    {id:"h07",t:"12:00",a:"Ăn trưa",c:"wellness",tip:""},
+    {id:"h08",t:"12:30",a:"Power nap 20' + Đọc sách",c:"learning",tip:""},
+    {id:"h09",t:"13:00",a:"Làm việc tại cơ quan",c:"work",tip:""},
+    {id:"h10",t:"17:30",a:"Về nhà + Nghe podcast",c:"learning",tip:""},
+    {id:"h11",t:"18:00",a:"Đi dạo với con + Chơi với con",c:"family",tip:""},
+    {id:"h12",t:"18:30",a:"Làm việc nhà",c:"house",tip:""},
+    {id:"h13",t:"19:00",a:"Ăn tối gia đình",c:"family",tip:""},
+    {id:"h14",t:"19:30",a:"Tập Piano 🎹 (30')",c:"creative",tip:""},
+    {id:"h15",t:"20:00",a:"Vibecoding 💻",c:"work",tip:""},
+    {id:"h16",t:"20:30",a:"Viết + Học tiếng Anh",c:"creative",tip:""},
+    {id:"h17",t:"21:00",a:"Thư giãn · Chuẩn bị ngủ",c:"wellness",tip:""},
+    {id:"h18",t:"21:30",a:"Ngủ 💤 (8 tiếng)",c:"sleep",tip:""}
   ],
   fri:[
-    {id:"f01",t:"05:00",a:"Thức dậy · vệ sinh cá nhân",c:"wellness",tip:""},
-    {id:"f02",t:"05:15",a:"Yoga 🧘 hoặc Chạy bộ 🏃 (45')",c:"exercise",tip:"Thiền 5 phút cuối · hít thở sâu 4-7-8"},
-    {id:"f03",t:"06:00",a:"Chăm sóc vườn cây + Nghe tiếng Anh",c:"garden",tip:"Tưới cây + quan sát · thư giãn tâm trí"},
-    {id:"f04",t:"06:30",a:"Ăn sáng",c:"wellness",tip:""},
-    {id:"f05",t:"07:05",a:"Đi làm + Podcast / Học tiếng Anh",c:"learning",tip:"Chuẩn bị playlist tối hôm trước"},
-    {id:"f06",t:"07:30",a:"Làm việc tại cơ quan",c:"work",tip:"Deep work 08:00–10:30 · không check email trước"},
-    {id:"f07",t:"11:30",a:"Về nhà + Podcast / Học tiếng Anh",c:"learning",tip:"Chuyển não khỏi work mode"},
-    {id:"f08",t:"11:50",a:"Ăn trưa",c:"wellness",tip:""},
-    {id:"f09",t:"12:15",a:"Nghỉ trưa (60') + Đọc sách",c:"learning",tip:"Đặt báo thức đúng giờ · đọc sách sau khi tỉnh"},
-    {id:"f10",t:"13:15",a:"Đi làm + Podcast / Học tiếng Anh",c:"learning",tip:"Chuẩn bị tâm thế cho buổi chiều"},
-    {id:"f11",t:"13:30",a:"Làm việc tại cơ quan",c:"work",tip:"Giải quyết tasks cần focus"},
-    {id:"f12",t:"17:30",a:"Về nhà + Nghe podcast",c:"learning",tip:"Chuyển não khỏi work mode"},
-    {id:"f13",t:"17:50",a:"Đi dạo với con · Chơi với con · Làm việc nhà",c:"family",tip:"Không điện thoại · 100% hiện diện"},
-    {id:"f14",t:"18:30",a:"Ăn tối gia đình",c:"family",tip:"Không điện thoại"},
-    {id:"f15",t:"19:30",a:"Vibecoding 💻",c:"work",tip:"Build mini-tool · giải quyết 1 vấn đề cụ thể"},
-    {id:"f16",t:"20:30",a:"Viết journal/blog + Học tiếng Anh",c:"creative",tip:"Ghi ý tưởng ngắn · Duolingo hoặc shadowing"},
-    {id:"f17",t:"21:30",a:"Thư giãn · Chuẩn bị ngủ",c:"wellness",tip:"Đọc nhẹ · không màn hình 30' trước ngủ"},
-    {id:"f18",t:"22:00",a:"Ngủ 💤 (7 tiếng)",c:"sleep",tip:""}
+    {id:"f01",t:"05:30",a:"Thức dậy · vệ sinh cá nhân",c:"wellness",tip:""},
+    {id:"f02",t:"06:00",a:"Chạy bộ 🏃 + Nghe podcast (45')",c:"exercise",tip:"Chạy dài hơn một chút trước weekend"},
+    {id:"f03",t:"06:45",a:"Chăm sóc vườn cây",c:"garden",tip:""},
+    {id:"f04",t:"07:05",a:"Ăn sáng + Đọc sách",c:"learning",tip:""},
+    {id:"f05",t:"07:35",a:"Đi làm + Podcast / Tiếng Anh",c:"learning",tip:""},
+    {id:"f06",t:"08:00",a:"Làm việc tại cơ quan",c:"work",tip:"Weekly review · lên kế hoạch cuối tuần"},
+    {id:"f07",t:"12:00",a:"Ăn trưa",c:"wellness",tip:""},
+    {id:"f08",t:"12:30",a:"Đọc sách · Viết ngắn",c:"creative",tip:""},
+    {id:"f09",t:"13:00",a:"Làm việc tại cơ quan",c:"work",tip:""},
+    {id:"f10",t:"17:30",a:"Về nhà + Nghe podcast",c:"learning",tip:""},
+    {id:"f11",t:"18:00",a:"Đi dạo với con + Chơi với con",c:"family",tip:""},
+    {id:"f12",t:"18:30",a:"Làm việc nhà",c:"house",tip:""},
+    {id:"f13",t:"19:00",a:"Ăn tối gia đình",c:"family",tip:""},
+    {id:"f14",t:"19:30",a:"Tập Guitar 🎸 (30')",c:"creative",tip:""},
+    {id:"f15",t:"20:00",a:"Vibecoding + Viết blog 💻 (60')",c:"work",tip:"Tối T6 = session dài hơi · follow creativity"},
+    {id:"f16",t:"21:00",a:"Thư giãn · Chuẩn bị T7",c:"wellness",tip:"Chuẩn bị đồ đi biển, plan ngày mai"},
+    {id:"f17",t:"21:30",a:"Ngủ 💤 (8 tiếng)",c:"sleep",tip:""}
   ],
   sat:[
     {id:"s01",t:"06:00",a:"Thức dậy · Calisthenics 💪 (45')",c:"exercise",tip:"Tập ngoài trời nếu có thể"},
@@ -580,11 +571,10 @@ const DEFAULT_SCHED={
 // ═══════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════
-const SK_BASE='tgb_v2';
-function getKey(uid){return uid?`${SK_BASE}_${uid}`:SK_BASE;}
+const SK='tgb_v2';
 let state;
 try{
-  const raw=localStorage.getItem(SK_BASE);
+  const raw=localStorage.getItem(SK);
   state=raw?JSON.parse(raw):null;
   if(!state||!state.schedule){
     state={schedule:JSON.parse(JSON.stringify(DEFAULT_SCHED)),completions:{},notes:{},apiKey:'',chatHistory:[]};
@@ -594,11 +584,7 @@ try{
 }
 if(!state.chatHistory)state.chatHistory=[];
 
-function save(){
-  const key=getKey(currentUser?.uid);
-  try{localStorage.setItem(key,JSON.stringify(state));}catch(e){}
-  debouncedSync();
-}
+function save(){try{localStorage.setItem(SK,JSON.stringify(state));}catch(e){}debouncedSync();}
 
 // ═══════════════════════════════════════════
 // APP STATE
@@ -1214,35 +1200,9 @@ function exportData(){
   a.click();URL.revokeObjectURL(a.href);
 }
 document.getElementById('btn-export').addEventListener('click',exportData);
-
-// ── RESET về lịch mặc định ──
-document.getElementById('btn-reset-default').addEventListener('click',()=>{
-  showModal(`<div class="modal-title">🔄 Reset lịch mặc định <button class="modal-close" id="mclose">✕</button></div>
-    <p style="color:var(--txt2);font-size:13px;margin-bottom:8px">Lịch T2–CN sẽ được đặt lại theo mẫu mặc định mới nhất.</p>
-    <p style="color:var(--txt3);font-size:12px;margin-bottom:16px">⚠️ Các thay đổi thủ công của bạn sẽ bị mất. Dữ liệu tick (hoàn thành) và ghi chú vẫn giữ nguyên.</p>
-    <div class="mfooter">
-      <button class="btn btn-g" id="mcancel">Hủy</button>
-      <button class="btn" id="mconfirm" style="background:var(--warn);color:#fff">🔄 Reset ngay</button>
-    </div>`);
-  document.getElementById('mclose').onclick=closeModal;
-  document.getElementById('mcancel').onclick=closeModal;
-  document.getElementById('mconfirm').onclick=async ()=>{
-    state.schedule=JSON.parse(JSON.stringify(DEFAULT_SCHED));
-    save();
-    closeModal();
-    renderAll();
-    showToast('✅ Đã reset về lịch mặc định mới nhất');
-    // Nếu đang đăng nhập, đẩy lên cloud ngay
-    if(currentUser&&db){
-      clearTimeout(syncTimeout);
-      await syncToCloud();
-    }
-  };
-});
 document.getElementById('btn-import-trigger').addEventListener('click',()=>document.getElementById('import-file').click());
 document.getElementById('import-file').addEventListener('change',e=>{
   const file=e.target.files[0];if(!file)return;
-  if(!currentUser){showToast('🔒 Vui lòng đăng nhập trước khi import');e.target.value='';return;}
   const r=new FileReader();
   r.onload=ev=>{
     try{
@@ -1291,15 +1251,99 @@ document.getElementById('mob-day-row').addEventListener('click',e=>{
 // ═══════════════════════════════════════════
 // MOBILE NAV
 // ═══════════════════════════════════════════
+function isMobile(){return window.innerWidth<=768;}
+
+function renderMobStats(){
+  const main=document.getElementById('main');
+  renderStats();
+  const statsHtml=document.getElementById('pc-stats').innerHTML;
+  main.innerHTML=`<div style="padding-bottom:16px">${statsHtml}</div>`;
+}
+
+function renderMobAi(){
+  const main=document.getElementById('main');
+  main.innerHTML=`
+    <div style="display:flex;flex-direction:column;height:calc(100vh - var(--hh) - 60px)">
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 0 12px;border-bottom:1px solid var(--brd);margin-bottom:8px;flex-shrink:0">
+        <div class="ai-dot"></div>
+        <div style="font-size:13px;font-weight:700;flex:1">Claude AI Assistant</div>
+        <button class="ai-cfg-btn" id="mob-ai-cfg">⚙️</button>
+      </div>
+      <div id="mob-ai-msgs" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-bottom:8px">
+        ${document.getElementById('ai-msgs').innerHTML}
+      </div>
+      <div style="display:flex;gap:7px;padding-top:10px;border-top:1px solid var(--brd);flex-shrink:0">
+        <textarea class="ai-inp" id="mob-ai-inp" placeholder="Hỏi về lịch trình của bạn..." rows="1"></textarea>
+        <button class="ai-send" id="mob-ai-send" ${state.apiKey?'':'disabled'}>↑</button>
+      </div>
+    </div>`;
+
+  document.getElementById('mob-ai-cfg').addEventListener('click',()=>{
+    document.getElementById('ai-cfg').click();
+  });
+
+  async function sendMobAi(){
+    const inp=document.getElementById('mob-ai-inp');
+    const msg=inp.value.trim();
+    if(!msg||!state.apiKey)return;
+    inp.value='';inp.style.height='auto';
+    const msgs=document.getElementById('mob-ai-msgs');
+    msgs.innerHTML+=`<div class="amsg u">${escHtml(msg)}</div>`;
+    msgs.innerHTML+=`<div class="amsg thinking" id="mob-ai-thinking">Claude đang suy nghĩ...</div>`;
+    msgs.scrollTop=msgs.scrollHeight;
+    const schedSummary=DAYS.map(d=>{
+      const items=state.schedule[d.key]||[];
+      return `${d.full}: ${items.map(i=>`${i.t} ${i.a}`).join(' | ')}`;
+    }).join('\n');
+    const systemPrompt=`Bạn là trợ lý quản lý thời gian thông minh. Người dùng có lịch tuần như sau:\n\n${schedSummary}\n\nHôm nay là ${DAYS.find(d=>d.key===todayKey())?.full}. Trả lời bằng tiếng Việt, ngắn gọn và thực dụng.`;
+    if(!state.chatHistory)state.chatHistory=[];
+    state.chatHistory.push({role:'user',content:msg});
+    // Sync to panel msgs too
+    document.getElementById('ai-msgs').innerHTML+=`<div class="amsg u">${escHtml(msg)}</div>`;
+    try{
+      const res=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':state.apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:systemPrompt,messages:state.chatHistory.slice(-10)})
+      });
+      const data=await res.json();
+      const reply=data.content?.[0]?.text||'Có lỗi xảy ra.';
+      state.chatHistory.push({role:'assistant',content:reply});
+      if(state.chatHistory.length>20)state.chatHistory=state.chatHistory.slice(-20);
+      save();
+      document.getElementById('mob-ai-thinking')?.remove();
+      msgs.innerHTML+=`<div class="amsg a">${escHtml(reply)}</div>`;
+      msgs.scrollTop=msgs.scrollHeight;
+      document.getElementById('ai-msgs').innerHTML+=`<div class="amsg a">${escHtml(reply)}</div>`;
+    }catch(err){
+      document.getElementById('mob-ai-thinking')?.remove();
+      msgs.innerHTML+=`<div class="amsg a" style="color:var(--err)">Lỗi: ${err.message}</div>`;
+      msgs.scrollTop=msgs.scrollHeight;
+    }
+  }
+
+  document.getElementById('mob-ai-send').addEventListener('click',sendMobAi);
+  document.getElementById('mob-ai-inp').addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMobAi();}
+    setTimeout(()=>{e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,80)+'px';},0);
+  });
+}
+
 document.querySelectorAll('.mnbtn').forEach(btn=>{
   btn.addEventListener('click',()=>{
     const v=btn.dataset.mv;
     document.querySelectorAll('.mnbtn').forEach(b=>b.classList.toggle('on',b.dataset.mv===v));
     activeMobView=v;
     if(v==='focus'){openFocus();return;}
-    if(v==='schedule'){document.getElementById('main').style.display='';if(panelOpen)closePanel();}
-    if(v==='stats'){openPanel('stats');}
-    if(v==='ai'){openPanel('ai');}
+    if(isMobile()){
+      if(v==='schedule'){renderMain();}
+      else if(v==='stats'){renderMobStats();}
+      else if(v==='ai'){renderMobAi();}
+    }else{
+      if(v==='schedule'){document.getElementById('main').style.display='';if(panelOpen)closePanel();}
+      if(v==='stats'){openPanel('stats');}
+      if(v==='ai'){openPanel('ai');}
+    }
   });
 });
 
@@ -1333,211 +1377,6 @@ setInterval(()=>{
 // Set today as default active day
 activeDay=todayKey();
 renderAll();
-
-
-// ═══════════════════════════════════════════
-// EXPORT EXCEL
-// ═══════════════════════════════════════════
-function exportExcel(){
-  if(typeof XLSX === 'undefined'){
-    showToast('❌ Thư viện Excel chưa tải xong, thử lại sau giây lát');
-    return;
-  }
-
-  const wb = XLSX.utils.book_new();
-  const catMap = {};
-  Object.entries(CATS).forEach(([k,v]) => catMap[k] = v.label);
-
-  // Sheet cho từng ngày
-  DAYS.forEach(d => {
-    const items = state.schedule[d.key] || [];
-    const rows = [
-      ['Giờ', 'Hoạt động', 'Danh mục', 'Mẹo / Ghi chú']
-    ];
-    items.forEach(it => {
-      rows.push([{t:'s',v:it.t}, it.a, catMap[it.c] || it.c, it.tip || '']);
-    });
-
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-
-    // Column widths
-    ws['!cols'] = [
-      {wch: 8},   // Giờ
-      {wch: 45},  // Hoạt động
-      {wch: 14},  // Danh mục
-      {wch: 50},  // Mẹo
-    ];
-
-    // Style header row (bold + background) - SheetJS Community supports basic styles
-    const headerStyle = {
-      font: { bold: true, color: { rgb: 'FFFFFF' } },
-      fill: { fgColor: { rgb: '23263C' } },
-      alignment: { horizontal: 'center' }
-    };
-    ['A1','B1','C1','D1'].forEach(cell => {
-      if(ws[cell]) ws[cell].s = headerStyle;
-    });
-
-    XLSX.utils.book_append_sheet(wb, ws, d.full);
-  });
-
-  // Sheet tổng hợp tất cả ngày
-  const summaryRows = [
-    ['Ngày', 'Giờ', 'Hoạt động', 'Danh mục', 'Mẹo / Ghi chú']
-  ];
-  DAYS.forEach(d => {
-    const items = state.schedule[d.key] || [];
-    items.forEach(it => {
-      summaryRows.push([d.full, {t:'s',v:it.t}, it.a, catMap[it.c] || it.c, it.tip || '']);
-    });
-    summaryRows.push(['', '', '', '', '']); // dòng trống phân cách
-  });
-
-  const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);
-  wsSummary['!cols'] = [
-    {wch: 12},  // Ngày
-    {wch: 8},   // Giờ
-    {wch: 45},  // Hoạt động
-    {wch: 14},  // Danh mục
-    {wch: 50},  // Mẹo
-  ];
-
-  // Freeze header row
-  wsSummary['!freeze'] = { xSplit: 0, ySplit: 1 };
-
-  XLSX.utils.book_append_sheet(wb, wsSummary, 'Tổng hợp');
-
-  const filename = `lich-tuan_${todayDate()}.xlsx`;
-  XLSX.writeFile(wb, filename);
-  showToast('✅ Đã xuất ' + filename);
-}
-
-document.getElementById('btn-export-excel').addEventListener('click', exportExcel);
-document.getElementById('btn-export-excel-sb').addEventListener('click', exportExcel);
-
-
-// ═══════════════════════════════════════════
-// IMPORT EXCEL
-// ═══════════════════════════════════════════
-const SHEET_TO_KEY = {
-  'Thứ Hai':'mon','Thứ Ba':'tue','Thứ Tư':'wed',
-  'Thứ Năm':'thu','Thứ Sáu':'fri','Thứ Bảy':'sat','Chủ Nhật':'sun'
-};
-const CAT_LABEL_TO_KEY = {};
-Object.entries(CATS).forEach(([k,v]) => CAT_LABEL_TO_KEY[v.label] = k);
-
-// Chuyển Excel time serial (0.229...) hoặc chuỗi "05:30" về "HH:MM"
-function excelTimeToHHMM(val){
-  if(val === '' || val === null || val === undefined) return '';
-  // Nếu đã là chuỗi HH:MM
-  if(typeof val === 'string'){
-    const s = val.trim();
-    if(/^\d{1,2}:\d{2}$/.test(s)) return s.padStart(5,'0').slice(0,5);
-    // Đôi khi Excel xuất "5:30 SA" hoặc "5:30:00"
-    const m = s.match(/^(\d{1,2}):(\d{2})/);
-    if(m) return String(m[1]).padStart(2,'0') + ':' + m[2];
-  }
-  // Nếu là số thập phân (Excel time serial)
-  if(typeof val === 'number'){
-    const totalMin = Math.round(val * 24 * 60);
-    const h = Math.floor(totalMin / 60) % 24;
-    const m = totalMin % 60;
-    return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
-  }
-  return String(val).trim();
-}
-
-function importExcel(){
-  document.getElementById('import-excel-file').click();
-}
-
-document.getElementById('btn-import-excel-trigger').addEventListener('click', importExcel);
-document.getElementById('btn-import-excel-sb').addEventListener('click', importExcel);
-
-document.getElementById('import-excel-file').addEventListener('change', e => {
-  const file = e.target.files[0];
-  if(!file) return;
-  if(!currentUser){showToast('🔒 Vui lòng đăng nhập trước khi import');e.target.value='';return;}
-
-  const reader = new FileReader();
-  reader.onload = ev => {
-    try{
-      if(typeof XLSX === 'undefined') throw new Error('Thư viện Excel chưa tải');
-
-      const data = new Uint8Array(ev.target.result);
-      const wb = XLSX.read(data, {type:'array'});
-
-      let updatedDays = [];
-      let errorDays = [];
-
-      wb.SheetNames.forEach(sheetName => {
-        const dayKey = SHEET_TO_KEY[sheetName];
-        if(!dayKey) return; // bỏ qua sheet Tổng hợp hoặc sheet lạ
-
-        const ws = wb.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
-
-        if(rows.length < 2){ errorDays.push(sheetName); return; }
-
-        // Tìm index cột dựa trên header row
-        const headers = rows[0].map(h => String(h).trim().toLowerCase());
-        const colGio    = headers.findIndex(h => h.includes('giờ') || h.includes('gio'));
-        const colAct    = headers.findIndex(h => h.includes('hoạt động') || h.includes('hoat dong'));
-        const colCat    = headers.findIndex(h => h.includes('danh mục') || h.includes('danh muc'));
-        const colTip    = headers.findIndex(h => h.includes('mẹo') || h.includes('meo') || h.includes('ghi chú'));
-
-        if(colGio < 0 || colAct < 0){
-          errorDays.push(sheetName + ' (thiếu cột)');
-          return;
-        }
-
-        const items = [];
-        let idSeqLocal = 1;
-        rows.slice(1).forEach(row => {
-          const t = excelTimeToHHMM(row[colGio]);
-          const a = String(row[colAct] || '').trim();
-          if(!t || !a) return; // bỏ dòng trống
-
-          // Bỏ qua dòng không parse được giờ
-          if(!t) return;
-
-          const catLabel = String(row[colCat] || '').trim();
-          const c = CAT_LABEL_TO_KEY[catLabel] || 'wellness';
-          const tip = colTip >= 0 ? String(row[colTip] || '').trim() : '';
-
-          items.push({
-            id: dayKey + '_xl_' + (idSeqLocal++),
-            t, a, c, tip
-          });
-        });
-
-        if(items.length === 0){ errorDays.push(sheetName + ' (không có dữ liệu hợp lệ)'); return; }
-
-        // Sắp xếp theo giờ
-        items.sort((a,b) => timeToMin(a.t) - timeToMin(b.t));
-        state.schedule[dayKey] = items;
-        updatedDays.push(sheetName);
-      });
-
-      if(updatedDays.length === 0){
-        showToast('❌ Không tìm thấy sheet hợp lệ nào');
-        return;
-      }
-
-      save();
-      renderAll();
-
-      let msg = '✅ Đã nhập: ' + updatedDays.join(', ');
-      if(errorDays.length) msg += ' | ⚠️ Lỗi: ' + errorDays.join(', ');
-      showToast(msg, 4500);
-
-    }catch(err){
-      showToast('❌ Lỗi đọc Excel: ' + err.message);
-    }
-    e.target.value = '';
-  };
-  reader.readAsArrayBuffer(file);
-});
 
 // ─────────────────────────────────────────────────────────────
 // FIREBASE + CLOUD SYNC
@@ -1598,7 +1437,7 @@ async function loadFromCloud(){
       if(d.schedule)state.schedule=d.schedule;
       if(d.completions)state.completions=d.completions;
       if(d.notes)state.notes=d.notes;
-      try{localStorage.setItem(getKey(currentUser?.uid),JSON.stringify(state));}catch{}
+      try{localStorage.setItem(SK,JSON.stringify(state));}catch{}
       renderAll();
       showToast('☁️ Đã tải dữ liệu từ đám mây');
     }else{
@@ -1623,7 +1462,7 @@ function setupRealtimeListener(){
       if(d.schedule)state.schedule=d.schedule;
       if(d.completions)state.completions=d.completions;
       if(d.notes)state.notes=d.notes;
-      try{localStorage.setItem(getKey(currentUser?.uid),JSON.stringify(state));}catch{}
+      try{localStorage.setItem(SK,JSON.stringify(state));}catch{}
       renderAll();
       setSyncStatus('synced');
     },err=>{console.error('Snapshot:',err);setSyncStatus('error');});
@@ -1704,49 +1543,14 @@ function initFirebase(cfg){
 
     // Listen for auth state changes
     fbAuth.onAuthStateChanged(user=>{
-      const prevUid=currentUser?.uid;
       currentUser=user;
       updateAuthUI();
       if(user){
-        // If switching accounts, reset state before loading
-        if(prevUid && prevUid!==user.uid){
-          state={schedule:JSON.parse(JSON.stringify(DEFAULT_SCHED)),completions:{},notes:{},apiKey:state.apiKey||'',chatHistory:[]};
-          renderAll();
-        }
-        // Try user-specific localStorage first (fast load), then sync from cloud
-        try{
-          const cached=localStorage.getItem(getKey(user.uid));
-          if(cached){
-            const parsed=JSON.parse(cached);
-            if(parsed.schedule){
-              state.schedule=parsed.schedule;
-              if(parsed.completions)state.completions=parsed.completions;
-              if(parsed.notes)state.notes=parsed.notes;
-              renderAll();
-            }
-          }
-        }catch{}
         loadFromCloud();
         setupRealtimeListener();
       }else{
         if(snapshotUnsub){snapshotUnsub();snapshotUnsub=null;}
-        // Reset to anonymous local data (SK_BASE key)
-        try{
-          const anon=localStorage.getItem(SK_BASE);
-          const parsed=anon?JSON.parse(anon):null;
-          state={
-            schedule:(parsed?.schedule)||JSON.parse(JSON.stringify(DEFAULT_SCHED)),
-            completions:(parsed?.completions)||{},
-            notes:(parsed?.notes)||{},
-            apiKey:state.apiKey||'',
-            chatHistory:[]
-          };
-        }catch{
-          state={schedule:JSON.parse(JSON.stringify(DEFAULT_SCHED)),completions:{},notes:{},apiKey:'',chatHistory:[]};
-        }
-        renderAll();
         setSyncStatus('offline');
-        showToast('👤 Đã về chế độ local');
       }
     });
 
