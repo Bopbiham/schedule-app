@@ -1037,7 +1037,16 @@ function renderStats(){
   DAYS.forEach(d=>{
     const items=state.schedule[d.key]||[];
     for(let i=0;i<items.length;i++){
-      const dur=i<items.length-1?timeToMin(items[i+1].t)-timeToMin(items[i].t):0;
+      let dur;
+      if(i<items.length-1){
+        // Khoảng cách đến item tiếp theo
+        dur=timeToMin(items[i+1].t)-timeToMin(items[i].t);
+      } else {
+        // Item cuối: tính đến item đầu của ngày hôm sau (+24h)
+        // Nếu ngày hôm sau không có thì tính đến nửa đêm
+        const firstItemNextDay=items[0]; // dùng item đầu của chính ngày đó (lịch lặp tuần)
+        dur=(timeToMin(firstItemNextDay.t)+24*60)-timeToMin(items[i].t);
+      }
       if(dur>0){
         const cat=items[i].c;
         if(weekHours[cat]!==undefined)weekHours[cat]+=dur;
