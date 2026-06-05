@@ -282,6 +282,41 @@ a{color:var(--acc);text-decoration:none}
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--card2);border:1px solid var(--brd2);color:var(--txt);padding:9px 16px;border-radius:var(--r);font-size:12px;font-weight:600;z-index:600;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.4)}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 @media(min-width:769px){.toast{bottom:24px}}
+
+/* ── STREAK CALENDAR ── */
+.sc-tabs{display:flex;gap:3px;background:var(--surf);border-radius:var(--rs);padding:3px;margin-bottom:12px}
+.sc-tab{flex:1;padding:6px 4px;border:none;background:transparent;border-radius:5px;font-size:11px;font-weight:600;color:var(--txt3);cursor:pointer;transition:.14s;font-family:var(--fn)}
+.sc-tab.on{background:var(--card);color:var(--txt);border:1px solid var(--brd)}
+.sc-cat-filter{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px}
+.sc-cat-pill{padding:4px 9px;border-radius:20px;font-size:10.5px;font-weight:600;cursor:pointer;border:1px solid var(--brd);background:transparent;color:var(--txt3);transition:.14s;font-family:var(--fn)}
+.sc-act-list{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;max-height:160px;overflow-y:auto}
+.sc-act-item{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:var(--rs);background:var(--card);border:1px solid transparent;cursor:pointer;transition:.14s}
+.sc-act-item:hover{border-color:var(--brd2)}
+.sc-act-item.on{border-color:var(--acc)}
+.sc-act-icon{width:24px;height:24px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;font-weight:700}
+.sc-act-name{font-size:11px;color:var(--txt);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sc-act-streak{font-size:10px;font-weight:700;flex-shrink:0}
+.sc-stats-row{display:flex;gap:6px;margin-bottom:10px}
+.sc-stat-box{flex:1;background:var(--card);border:1px solid var(--brd);border-radius:var(--rs);padding:8px 6px;text-align:center}
+.sc-stat-num{font-size:17px;font-weight:800;color:var(--txt)}
+.sc-stat-lbl{font-size:9.5px;color:var(--txt3);margin-top:2px}
+.sc-cal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.sc-cal-title{font-size:12px;font-weight:700;color:var(--txt)}
+.sc-nav-btn{width:24px;height:24px;border:1px solid var(--brd);border-radius:5px;background:transparent;color:var(--txt3);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;font-family:var(--fn);line-height:1}
+.sc-nav-btn:hover{background:var(--card);color:var(--txt)}
+.sc-day-labels{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:3px}
+.sc-day-lbl{text-align:center;font-size:9px;color:var(--txt3);font-weight:600;padding:1px 0}
+.sc-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.sc-cell{aspect-ratio:1;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:var(--txt3);position:relative;cursor:default;transition:.1s;background:var(--card)}
+.sc-cell.empty{background:transparent;color:transparent;pointer-events:none}
+.sc-cell.future{background:var(--surf);color:var(--txt3);opacity:.4}
+.sc-cell.done-full{color:#fff;font-weight:700}
+.sc-cell.done-part{color:#fff;font-weight:600}
+.sc-cell.is-today{box-shadow:0 0 0 1.5px var(--acc)}
+.sc-legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.sc-leg-item{display:flex;align-items:center;gap:3px;font-size:9.5px;color:var(--txt3)}
+.sc-leg-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.sc-tooltip{font-size:10px;color:var(--txt2);text-align:center;min-height:15px;margin-top:5px;font-style:italic}
 </style>
 </head>
 <body>
@@ -1029,6 +1064,259 @@ document.getElementById('btn-focus').addEventListener('click',()=>{
 // ═══════════════════════════════════════════
 // STATS PANEL
 // ═══════════════════════════════════════════
+
+// ── Streak Calendar State ──
+let scViewMode='day'; // 'day' | 'cat' | 'act'
+let scSelCat='all';
+let scSelAct=null;
+let scViewYear=new Date().getFullYear();
+let scViewMonth=new Date().getMonth();
+
+function scDateStr(y,m,d){return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;}
+
+function scGetDayRate(dstr,dayKey,filter){
+  const items=state.schedule[dayKey]||[];
+  if(!items.length)return -1;
+  const comp=(state.completions[dstr]||{})[dayKey]||{};
+  let pool=items;
+  if(filter&&filter.cat&&filter.cat!=='all') pool=items.filter(it=>it.c===filter.cat);
+  if(filter&&filter.act) pool=items.filter(it=>it.id===filter.act);
+  if(!pool.length)return -1;
+  const done=pool.filter(it=>comp[it.id]).length;
+  return done/pool.length;
+}
+
+function scGetFilter(){
+  if(scViewMode==='cat') return {cat:scSelCat};
+  if(scViewMode==='act'&&scSelAct) return {act:scSelAct};
+  return {};
+}
+
+function scGetColor(){
+  if(scViewMode==='cat'&&scSelCat!=='all') return CATS[scSelCat]?.color||'#5B80FF';
+  if(scViewMode==='act'&&scSelAct){
+    for(const dk of ['mon','tue','wed','thu','fri','sat','sun']){
+      const f=(state.schedule[dk]||[]).find(it=>it.id===scSelAct);
+      if(f) return CATS[f.c]?.color||'#5B80FF';
+    }
+  }
+  return '#F97316';
+}
+
+function hexAlpha(hex,a){
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function scComputeStats(){
+  const filter=scGetFilter();
+  const now=new Date();
+  const monthDays=new Date(scViewYear,scViewMonth+1,0).getDate();
+  let monthDone=0;
+  for(let d=1;d<=monthDays;d++){
+    const ds=scDateStr(scViewYear,scViewMonth,d);
+    if(ds>now.toISOString().split('T')[0])break;
+    const dk=DOW_MAP[new Date(scViewYear,scViewMonth,d).getDay()];
+    if(scGetDayRate(ds,dk,filter)>=0.5)monthDone++;
+  }
+  // Current streak
+  let cur=0;
+  for(let i=0;;i++){
+    const d=new Date(now);d.setDate(d.getDate()-i);
+    if(d<new Date(now.getFullYear()-1,0,1))break;
+    const dk=DOW_MAP[d.getDay()];
+    const ds=d.toISOString().split('T')[0];
+    const r=scGetDayRate(ds,dk,filter);
+    if(r>=0.5)cur++;
+    else if(i>0)break;
+  }
+  // Best streak (90 days)
+  let best=0,tmp=0;
+  for(let i=89;i>=0;i--){
+    const d=new Date(now);d.setDate(d.getDate()-i);
+    const dk=DOW_MAP[d.getDay()];
+    const ds=d.toISOString().split('T')[0];
+    if(scGetDayRate(ds,dk,filter)>=0.5){tmp++;if(tmp>best)best=tmp;}
+    else tmp=0;
+  }
+  return{cur,best,monthDone,monthDays};
+}
+
+function scGetActStreak(actId){
+  let cur=0;
+  const now=new Date();
+  for(let i=0;;i++){
+    const d=new Date(now);d.setDate(d.getDate()-i);
+    if(d<new Date(now.getFullYear()-1,0,1))break;
+    const dk=DOW_MAP[d.getDay()];
+    const ds=d.toISOString().split('T')[0];
+    const items=state.schedule[dk]||[];
+    const inDay=items.find(it=>it.id===actId);
+    if(!inDay){if(i>0)break;continue;}
+    const comp=(state.completions[ds]||{})[dk]||{};
+    if(comp[actId])cur++;
+    else if(i>0)break;
+  }
+  return cur;
+}
+
+function scGetAllActs(){
+  const seen=new Set(),acts=[];
+  ['mon','tue','wed','thu','fri','sat','sun'].forEach(dk=>{
+    (state.schedule[dk]||[]).forEach(it=>{
+      if(!seen.has(it.id)){seen.add(it.id);acts.push({...it,dayKey:dk});}
+    });
+  });
+  return acts;
+}
+
+function renderStreakCalendar(container){
+  const now=new Date();
+  const todayS=now.toISOString().split('T')[0];
+  const col=scGetColor();
+  const filter=scGetFilter();
+  const stats=scComputeStats();
+  const MONTH_VN=['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+
+  // Tabs
+  let html=`<div class="sc-tabs">
+    <button class="sc-tab${scViewMode==='day'?' on':''}" data-scv="day">Cả ngày</button>
+    <button class="sc-tab${scViewMode==='cat'?' on':''}" data-scv="cat">Danh mục</button>
+    <button class="sc-tab${scViewMode==='act'?' on':''}" data-scv="act">Hoạt động</button>
+  </div>`;
+
+  // Filter area
+  if(scViewMode==='cat'){
+    html+=`<div class="sc-cat-filter">
+      <button class="sc-cat-pill${scSelCat==='all'?' on':''}" data-scc="all" style="${scSelCat==='all'?'background:var(--txt3);color:var(--bg);border-color:var(--txt3)':''}">Tất cả</button>`;
+    Object.entries(CATS).forEach(([k,c])=>{
+      const on=scSelCat===k;
+      html+=`<button class="sc-cat-pill${on?' on':''}" data-scc="${k}" style="${on?`background:${c.color};color:#fff;border-color:${c.color}`:`border-color:${c.color}55;color:${c.color}`}">${c.label}</button>`;
+    });
+    html+=`</div>`;
+  }else if(scViewMode==='act'){
+    const acts=scGetAllActs();
+    html+=`<div class="sc-act-list">`;
+    acts.forEach(it=>{
+      const streak=scGetActStreak(it.id);
+      const c=CATS[it.c]?.color||'#888';
+      const on=scSelAct===it.id;
+      const name=it.a.replace(/\s*\([^)]*\)/,'').replace(/[🏋🧘🏃💻📚🎨❤️🌊🎹🎸🎯📋💤🔥⚡]/gu,'').trim().slice(0,32);
+      html+=`<div class="sc-act-item${on?' on':''}" data-sca="${it.id}" style="${on?`border-color:${c}`:''}">
+        <div class="sc-act-icon" style="background:${c}22;color:${c}">${CATS[it.c]?.label?.slice(0,1)||'•'}</div>
+        <div class="sc-act-name">${name}</div>
+        <div class="sc-act-streak" style="color:${c}">${streak>0?streak+'🔥':'—'}</div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  // Stats row
+  html+=`<div class="sc-stats-row">
+    <div class="sc-stat-box">
+      <div class="sc-stat-num" style="color:${col}">${stats.cur}</div>
+      <div class="sc-stat-lbl">Streak hiện tại</div>
+    </div>
+    <div class="sc-stat-box">
+      <div class="sc-stat-num">${stats.best}</div>
+      <div class="sc-stat-lbl">Dài nhất (90n)</div>
+    </div>
+    <div class="sc-stat-box">
+      <div class="sc-stat-num">${stats.monthDone}/${stats.monthDays}</div>
+      <div class="sc-stat-lbl">Tháng này</div>
+    </div>
+  </div>`;
+
+  // Calendar header
+  const canGoNext=!(scViewYear>now.getFullYear()||(scViewYear===now.getFullYear()&&scViewMonth>=now.getMonth()));
+  html+=`<div class="sc-cal-hdr">
+    <button class="sc-nav-btn" id="sc-prev">‹</button>
+    <div class="sc-cal-title">${MONTH_VN[scViewMonth]} ${scViewYear}</div>
+    <button class="sc-nav-btn" id="sc-next" ${canGoNext?'':'disabled'} style="${canGoNext?'':'opacity:.3;cursor:default'}">›</button>
+  </div>`;
+
+  // Day labels (Mon first)
+  html+=`<div class="sc-day-labels"><span class="sc-day-lbl">T2</span><span class="sc-day-lbl">T3</span><span class="sc-day-lbl">T4</span><span class="sc-day-lbl">T5</span><span class="sc-day-lbl">T6</span><span class="sc-day-lbl">T7</span><span class="sc-day-lbl">CN</span></div>`;
+
+  // Grid
+  const firstDow=new Date(scViewYear,scViewMonth,1).getDay();
+  const offset=(firstDow+6)%7; // Mon=0
+  const daysInMonth=new Date(scViewYear,scViewMonth+1,0).getDate();
+  html+=`<div class="sc-grid">`;
+  for(let i=0;i<offset;i++) html+=`<div class="sc-cell empty"></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=scDateStr(scViewYear,scViewMonth,d);
+    const dk=DOW_MAP[new Date(scViewYear,scViewMonth,d).getDay()];
+    const isFuture=ds>todayS;
+    const isToday=ds===todayS;
+    const rate=isFuture?-1:scGetDayRate(ds,dk,filter);
+    let bg='var(--card)',cls='sc-cell',fColor='var(--txt3)';
+    if(isFuture){cls+=' future';}
+    else if(rate>=0.5){bg=col;cls+=' done-full';fColor='#fff';}
+    else if(rate>0){bg=hexAlpha(col,0.45);cls+=' done-part';fColor='#fff';}
+    if(isToday)cls+=' is-today';
+    html+=`<div class="${cls}" style="background:${bg};color:${fColor}" data-ds="${ds}" data-dk="${dk}" data-rate="${rate.toFixed(2)}">${d}</div>`;
+  }
+  html+=`</div>`;
+
+  // Legend + tooltip
+  html+=`<div class="sc-tooltip" id="sc-tooltip"></div>`;
+  html+=`<div class="sc-legend">
+    <div class="sc-leg-item"><div class="sc-leg-dot" style="background:var(--card);border:1px solid var(--brd)"></div>Chưa có</div>
+    <div class="sc-leg-item"><div class="sc-leg-dot" style="background:${hexAlpha(col,0.45)}"></div>&lt;50%</div>
+    <div class="sc-leg-item"><div class="sc-leg-dot" style="background:${col}"></div>≥50%</div>
+  </div>`;
+
+  container.innerHTML=html;
+
+  // Events: tabs
+  container.querySelectorAll('[data-scv]').forEach(b=>{
+    b.addEventListener('click',()=>{scViewMode=b.dataset.scv;scSelCat='all';scSelAct=null;renderStreakCalendar(container);});
+  });
+  // Cat pills
+  container.querySelectorAll('[data-scc]').forEach(b=>{
+    b.addEventListener('click',()=>{scSelCat=b.dataset.scc;renderStreakCalendar(container);});
+  });
+  // Act items
+  container.querySelectorAll('[data-sca]').forEach(b=>{
+    b.addEventListener('click',()=>{scSelAct=scSelAct===b.dataset.sca?null:b.dataset.sca;renderStreakCalendar(container);});
+  });
+  // Nav buttons
+  const prevBtn=container.querySelector('#sc-prev');
+  const nextBtn=container.querySelector('#sc-next');
+  if(prevBtn) prevBtn.addEventListener('click',()=>{
+    scViewMonth--;if(scViewMonth<0){scViewMonth=11;scViewYear--;}
+    renderStreakCalendar(container);
+  });
+  if(nextBtn&&canGoNext) nextBtn.addEventListener('click',()=>{
+    scViewMonth++;if(scViewMonth>11){scViewMonth=0;scViewYear++;}
+    renderStreakCalendar(container);
+  });
+  // Hover tooltip
+  container.querySelectorAll('.sc-cell:not(.empty)').forEach(cell=>{
+    cell.addEventListener('mouseenter',()=>{
+      const ds=cell.dataset.ds;const dk=cell.dataset.dk;const rate=parseFloat(cell.dataset.rate);
+      if(!dk)return;
+      const items=state.schedule[dk]||[];
+      const comp=(state.completions[ds]||{})[dk]||{};
+      const f=scGetFilter();
+      let pool=items;
+      if(f.cat&&f.cat!=='all')pool=items.filter(it=>it.c===f.cat);
+      if(f.act)pool=items.filter(it=>it.id===f.act);
+      const done=pool.filter(it=>comp[it.id]).length;
+      const pct=pool.length?Math.round(done/pool.length*100):0;
+      const tip=ds>new Date().toISOString().split('T')[0]?`${ds} — chưa đến`
+        :pool.length?`${ds} — ${done}/${pool.length} hoàn thành (${pct}%)`
+        :`${ds} — không có lịch`;
+      const el=container.querySelector('#sc-tooltip');
+      if(el)el.textContent=tip;
+    });
+    cell.addEventListener('mouseleave',()=>{
+      const el=container.querySelector('#sc-tooltip');if(el)el.textContent='';
+    });
+  });
+}
+
 function renderStats(){
   const el=document.getElementById('pc-stats');
   // Calculate hours per category per week
@@ -1039,12 +1327,9 @@ function renderStats(){
     for(let i=0;i<items.length;i++){
       let dur;
       if(i<items.length-1){
-        // Khoảng cách đến item tiếp theo
         dur=timeToMin(items[i+1].t)-timeToMin(items[i].t);
       } else {
-        // Item cuối: tính đến item đầu của ngày hôm sau (+24h)
-        // Nếu ngày hôm sau không có thì tính đến nửa đêm
-        const firstItemNextDay=items[0]; // dùng item đầu của chính ngày đó (lịch lặp tuần)
+        const firstItemNextDay=items[0];
         dur=(timeToMin(firstItemNextDay.t)+24*60)-timeToMin(items[i].t);
       }
       if(dur>0){
@@ -1085,15 +1370,20 @@ function renderStats(){
     </div>
   </div>`;
 
-  // Streak
+  // Streak summary (số nhanh)
   const streak=computeStreak();
   html+=`<div class="stat-section">
     <div class="stat-title">🔥 Streak</div>
     <div style="font-size:36px;font-weight:800;color:${streak>=7?'var(--acc)':streak>=3?'var(--ok)':'var(--warn)'};margin-bottom:4px">${streak} ngày</div>
-    <div style="font-size:11px;color:var(--txt3)">${streak===0?'Bắt đầu streak hôm nay!':streak<3?'Tiếp tục duy trì!':streak<7?'Đang vào guồng 🔥':streak<14?'Streak ấn tượng! 🔥🔥':'Bạn là máy! ⚡🔥'}</div>
+    <div style="font-size:11px;color:var(--txt3);margin-bottom:12px">${streak===0?'Bắt đầu streak hôm nay!':streak<3?'Tiếp tục duy trì!':streak<7?'Đang vào guồng 🔥':streak<14?'Streak ấn tượng! 🔥🔥':'Bạn là máy! ⚡🔥'}</div>
+    <div id="streak-cal-wrap"></div>
   </div>`;
 
   el.innerHTML=html;
+
+  // Render streak calendar vào wrap vừa tạo
+  const wrap=el.querySelector('#streak-cal-wrap');
+  if(wrap) renderStreakCalendar(wrap);
 }
 
 // ═══════════════════════════════════════════
@@ -1309,7 +1599,10 @@ function renderMobStats(){
   main.style.display='';
   renderStats();
   // Copy nội dung từ pc-stats sang main
-  main.innerHTML=`<div style="padding-bottom:16px">${document.getElementById('pc-stats').innerHTML}</div>`;
+  main.innerHTML=`<div style="padding-bottom:80px">${document.getElementById('pc-stats').innerHTML}</div>`;
+  // Re-render streak calendar vào wrap trong main (innerHTML copy mất event listeners)
+  const wrap=main.querySelector('#streak-cal-wrap');
+  if(wrap) renderStreakCalendar(wrap);
 }
 
 // ── Render AI vào main (mobile) ──
